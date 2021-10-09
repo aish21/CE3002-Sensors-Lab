@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">HeartRateMonitor</string>
+    <string name="nameTV">Name:</string>
+    <string name="emailTV">Email ID:</string>
+    <string name="resultTV">Heart Rate:</string>
+    <string name="bluetoothNil">This device does not support Bluetooth!</string>
+</resources>
