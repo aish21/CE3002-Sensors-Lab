@@ -149,9 +149,10 @@ int divider = 0, noteDuration = 0;
 // Wiring: SDA pin is connected to A4 and SCL pin to A5.
 // Connect to LCD via I2C, default address 0x27 (A0-A2 not jumpered)
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2); // Change to (0x27,20,4) for 20x4 LCD.
+//*************************************************************************************************
 
-char state = 0;
-
+//*******************************************************************
+char state = 0; //for bluetooth
 //********************************************************************
 void setup() {
   // put your setup code here, to run once:
@@ -161,68 +162,84 @@ void setup() {
   Serial.begin(9600); // Default communication rate of the Bluetooth module
   pinMode(7, OUTPUT);
   pinMode(5, OUTPUT);
-  //marioSound();
-
-  //welcomeMsg();
-
   
-
- Serial.begin(9600); 
+  
 }
 
 int sig;
-int bpm;
+
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  sig=analogRead(A1);
-  Serial.println(sig);
-
-  if(Serial.available() > 0)
+    if(Serial.available() > 0)
   
   { // Checks whether data is comming from the serial port
     state = Serial.read(); // Reads the data from the serial port
 
     if (state == '1') { //if phone sends char 1 then switch on 
-      digitalWrite(7, LOW); //turn off RED LED
       lcd.clear();
-      digitalWrite(5, HIGH); // Turn GREEN LED
-      Serial.println("LED: ON"); // Send back, to the phone, the String "LED: ON"
       marioSound();
       welcomeMsg();
+      lcd.clear();
 
-      if ( bpm > 400 && bpm <= 500 )
-      {
-        void calcMsg();
-        delay(2000);
-        //you are okay
-        bpmMsg();
-        
-      }
 
-      else if (bpm > 600 && bpm <= 800 )
-      {
-         void calcMsg();
-         delay(2000);
-        //take a breather
-        bpmMsg();
-      }
+      int prevP = 0;
+      int currP;
+      int totalP = 0;
+      int sum = 0;
+      double finalBPM;
+      int count = 0;
+    
+       while(1){
+       sig = analogRead(A1);
+       //Serial.println(sig);
+      
+       if(sig>865) 
+       {
 
-      else if (bpm > 900)
-      {
-        void calcMsg();
-         delay(2000);
-         bpmMsg();
-        //are u ok?
-      }
-
-      else if (sig < 400)
-      {
-        void fingerMsg();
-        
-      }
-     
+        heartbeatSound();
+        calcMsg();
+        Serial.println("Calculating... please hold");
+            while(sig > 865){
+              
+              sig = analogRead(A1);
+              //Serial.println("Peak signal reading: ");
+              Serial.println(sig); //take the highest peak values
+            }
+            currP = millis();
+            totalP = 0.7*totalP + 0.3*(currP-prevP);
+            prevP = currP;
+            int BPM = 60000/totalP;
+    
+           //Serial.println("Your BPM is: ");
+           //Serial.println(BPM);
+    
+    
+           if (BPM >= 40 && BPM <= 140){
+            sum = sum + BPM;
+            count = count + 1;
+            //Serial.println(BPM);
+            
+           }
+    
+           if(count == 2){
+            finalBPM = sum/count;
+            lcd.clear();
+            Serial.flush();
+            Serial.println("Your BPM is: ");
+            Serial.println(finalBPM); //SEND TO ANDROID
+            lcd.clear();
+            lcd.setCursor(0, 0); // Set the cursor on the third column and first row.
+            lcd.print("YOUR BPM IS:"); // Print the string "Hello World!"
+            lcd.setCursor(1, 1); //Set the cursor on the third column and the second row (counting starts at 0!).
+            lcd.print(finalBPM);
+            break;
+           }
+    
+       }
+     }
+       
     }
 
 
@@ -248,25 +265,13 @@ void welcomeMsg(){
 
 void calcMsg(){
   lcd.setCursor(0, 0); // Set the cursor on the third column and first row.
-  lcd.print("CALCULATING YOUR"); // Print the string "Hello World!"
+  lcd.print("CALCULATING..."); // Print the string "Hello World!"
   lcd.setCursor(1, 1); //Set the cursor on the third column and the second row (counting starts at 0!).
-  lcd.print("BPM. PLEASE HOLD.");
+  lcd.print("PLEASE HOLD.");
+  lcd.clear();
 }
 
-void bpmMsg(){
-  lcd.setCursor(0, 0); // Set the cursor on the third column and first row.
-  lcd.print("YOUR BPM IS:"); // Print the string "Hello World!"
-  lcd.setCursor(1, 1); //Set the cursor on the third column and the second row (counting starts at 0!).
-  lcd.print("");
-}
 
-void errorMsg(){
-  // Print 'Hello noWorld' on the first line of the LCD:
-  lcd.setCursor(0, 0); // Set the cursor on the third column and first row.
-  lcd.print("NOT CONNECTED"); // Print the string "Hello World!"
-  lcd.setCursor(0, 1); //Set the cursor on the third column and the second row (counting starts at 0!).
-  lcd.print("TO PHONE");
-}
 
 void heartbeatSound(){
     int i = 0;
